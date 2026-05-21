@@ -1,0 +1,11 @@
+# Data Ingestion
+google-cloud-bigquery>=3.10.0
+kaggle>=1.5.16
+pandas>=2.0.0
+db-dtypes>=1.1.0
+
+# Data Transformation (dbt Core with BigQuery adapter)
+dbt-bigquery>=1.5.0
+
+# Optional: Helper utilities
+python-dotenv>=1.0.0

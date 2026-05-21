@@ -1,0 +1,33 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ipynb_checkpoints/
+
+# GCP Credentials & Kaggle Secrets (CRITICAL)
+*.json
+!kaggle.json.example
+!dbt_project.yml
+secrets/
+.credentials/
+.env
+
+# Data Files (Avoid committing large CSVs)
+data/
+*.csv
+*.zip
+
+# dbt Artifacts & Packages
+target/
+dbt_packages/
+dbt_modules/
+logs/
+Profiles.yml

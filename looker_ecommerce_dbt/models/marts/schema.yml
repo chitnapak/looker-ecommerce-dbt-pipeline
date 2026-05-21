@@ -1,0 +1,37 @@
+version: 2
+
+models:
+  - name: dim_users
+    description: "Customer dimension table containing descriptive attributes of users and cohort indicators."
+    columns:
+      - name: user_id
+        description: "Primary key. Unique identifier for each customer."
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_products
+    description: "Product dimension table containing attributes of each product catalog joined with its distribution center."
+    columns:
+      - name: product_id
+        description: "Primary key. Unique identifier for each product."
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_order_items
+    description: "Transactional fact table representing each item sold in an order, enriched with financial and logistics metrics."
+    columns:
+      - name: order_item_id
+        description: "Primary key. Unique identifier for each order item."
+        tests:
+          - unique
+          - not_null
+      - name: user_id
+        description: "Foreign key to dim_users."
+        tests:
+          - not_null
+      - name: product_id
+        description: "Foreign key to dim_products."
+        tests:
+          - not_null
