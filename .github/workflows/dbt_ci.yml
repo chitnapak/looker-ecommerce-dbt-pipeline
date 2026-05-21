@@ -1,0 +1,71 @@
+name: dbt CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  dbt-ci:
+    name: Run dbt Compile and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install dbt-bigquery
+
+      - name: Set up GCP Credentials
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          mkdir -p .credentials
+          echo "$GCP_SA_KEY" > .credentials/gcp-service-account.json
+
+      - name: Create Temporary dbt profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          cat <<EOF > ~/.dbt/profiles.yml
+          looker_ecommerce_dbt:
+            outputs:
+              ci:
+                type: bigquery
+                method: service-account
+                project: looker-ecommerce-analytics
+                dataset: dbt_ci
+                threads: 4
+                keyfile: $(pwd)/.credentials/gcp-service-account.json
+                timeout_seconds: 300
+                priority: interactive
+                location: US
+            target: ci
+          EOF
+
+      - name: Check dbt Connection (Debug)
+        run: |
+          cd looker_ecommerce_dbt
+          dbt debug --target ci
+
+      - name: Run dbt Staging & Marts Models
+        run: |
+          cd looker_ecommerce_dbt
+          dbt run --target ci
+
+      - name: Run dbt Data Quality Tests
+        run: |
+          cd looker_ecommerce_dbt
+          dbt test --target ci
