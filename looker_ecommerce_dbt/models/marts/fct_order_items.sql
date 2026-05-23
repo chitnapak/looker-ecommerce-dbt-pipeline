@@ -2,6 +2,10 @@ with order_items as (
     select * from {{ ref('stg_order_items') }}
 ),
 
+inventory_items as (
+    select * from {{ ref('stg_inventory_items') }}
+),
+
 products as (
     select * from {{ ref('stg_products') }}
 )
@@ -20,8 +24,8 @@ select
     oi.sale_price,
     
     -- Product financial details
-    p.cost as product_cost,
-    oi.sale_price - p.cost as profit,
+    ii.cost as product_cost,
+    oi.sale_price - ii.cost as profit,
     
     -- Logistics & Delivery metrics (using timestamp_diff for BigQuery timestamps)
     timestamp_diff(oi.shipped_at, oi.created_at, DAY) as days_to_ship,
@@ -33,5 +37,7 @@ select
     case when oi.status = 'Returned' then 1 else 0 end as is_returned,
     case when oi.status = 'Cancelled' then 1 else 0 end as is_cancelled
 from order_items oi
+left join inventory_items ii
+    on oi.inventory_item_id = ii.inventory_item_id
 left join products p
     on oi.product_id = p.product_id
