@@ -4,10 +4,6 @@ with order_items as (
 
 inventory_items as (
     select * from {{ ref('stg_inventory_items') }}
-),
-
-products as (
-    select * from {{ ref('stg_products') }}
 )
 
 select
@@ -39,5 +35,3 @@ select
 from order_items oi
 left join inventory_items ii
     on oi.inventory_item_id = ii.inventory_item_id
-left join products p
-    on oi.product_id = p.product_id
