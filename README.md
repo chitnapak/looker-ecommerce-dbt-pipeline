@@ -4,49 +4,32 @@ An end-to-end, production-grade **Modern Data Stack** pipeline designed for reta
 
 ---
 
-## 1. Table of Contents
+## Table of Contents
 
-- [2. Overview](#2-overview)
-- [3. Key Features](#3-key-features)
-- [4. Tools / Technologies](#4-tools--technologies)
-- [5. Development Environment](#5-development-environment)
-- [6. How Things Work](#6-how-things-work)
-- [7. How to Setup](#7-how-to-setup)
-- [8. References / Useful Resources](#8-references--useful-resources)
-- [9. My Notes](#9-my-notes)
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Tools / Technologies](#tools--technologies)
+- [Development Environment](#development-environment)
+- [How Things Work](#how-things-work)
+- [How to Setup](#how-to-setup)
+- [References / Useful Resources](#references--useful-resources)
+- [My Notes](#my-notes)
 
 ---
 
-## 2. Overview
+## Overview
 
 This project implements a complete, enterprise-grade data platform using a modern ELT (Extract-Load-Transform) design. It automates the process of extracting raw e-commerce transaction data, loading it onto a secure cloud data warehouse, transforming it into high-performance analytical datasets using standard dimensional modeling, and presenting key business health metrics on an interactive executive dashboard.
 
 ### Pipeline Architecture Workflow:
 
-```mermaid
-graph LR
-    %% Data Flow
-    Source[Kaggle API] -->|Python Ingestion: ingest.py| RawDB[(BigQuery Raw: raw_thelook)]
-    RawDB -->|dbt Staging View| StgLayer[Staging Layer]
-    StgLayer -->|dbt Transformation: Table Marts| MartsLayer[(BigQuery Analytics: dbt_dev)]
-    MartsLayer -->|Fetch fct_daily_sales| BI[Looker Studio Dashboard]
-    
-    %% DevOps
-    Code[VS Code Local] -->|Push Code| GitRepo[GitHub Repository]
-    GitRepo -->|Trigger PR / Push| CI[GitHub Actions CI/CD]
-    CI -->|Quality Control: dbt test| MartsLayer
+![Alt text](https://github.com/chitnapak/looker-ecommerce-dbt-pipeline/blob/8ebef38d34a9b2f28372d357339c27f856e1dcb2/Presentation.png)
 
-    %% Styling
-    style Source fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px,color:#000
-    style RawDB fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#000
-    style MartsLayer fill:#F3E5F5,stroke:#6A1B9A,stroke-width:2px,color:#000
-    style BI fill:#FFF8E1,stroke:#FF8F00,stroke-width:2px,color:#000
-    style GitRepo fill:#ECEFF1,stroke:#37474F,stroke-width:2px,color:#000
-```
+👉 **[Click here to view dashboard on Data Studio](https://datastudio.google.com/reporting/f004d3e7-693e-47e5-b0d7-037142b7f1df)**
 
 ---
 
-## 3. Key Features
+## Key Features
 
 - **Automated Data Ingestion (Python ETL):** Seamless extraction of transaction, product catalog, user demographics, inventory, and event data using Kaggle API, writing cleaned datasets into BigQuery.
 - **Dimensional Data Modeling (Star Schema):** Designed specialized dimension (`dim_users`, `dim_products`) and fact (`fct_order_items`) models in the dbt Marts layer for comprehensive business intelligence.
@@ -57,7 +40,7 @@ graph LR
 
 ---
 
-## 4. Tools / Technologies
+## Tools / Technologies
 
 - **Python (3.10):** Core engine for data ingestion scripts, utilizing the `google-cloud-bigquery` SDK, `pandas` for basic schema sanitization, and the `kaggle` API wrapper.
 - **Google BigQuery:** Enterprise serverless cloud data warehouse acting as our primary storage and processing engine, divided into a raw zone (`raw_thelook`) and analytics zone (`dbt_dev`).
@@ -67,9 +50,8 @@ graph LR
 
 ---
 
-## 5. Development Environment
+## Development Environment
 
-- **Host OS:** Windows 10/11
 - **Code IDE:** Visual Studio Code (VS Code)
 - **Environment Isolation:** Python Virtual Environment (`.venv`)
 - **Key VS Code Extensions:**
@@ -78,7 +60,7 @@ graph LR
 
 ---
 
-## 6. How Things Work
+## How Things Work
 
 1. **Extraction (E):** The Python ingestion pipeline fetches the Looker E-commerce dataset using Kaggle credentials.
 2. **Loading (L):** The raw files are automatically mapped and loaded as physical tables in the `raw_thelook` BigQuery dataset.
@@ -93,7 +75,7 @@ graph LR
 
 ---
 
-## 7. How to Setup
+## How to Setup
 
 ### Step 1: Clone and Set Up Python Virtual Environment
 Clone your repository and initialize your isolated environment inside the root directory:
@@ -149,7 +131,7 @@ cd looker_ecommerce_dbt
 
 ---
 
-## 8. References / Useful Resources
+## References / Useful Resources
 
 - **Data Source:** [Looker Synthetic E-Commerce Kaggle Dataset](https://www.kaggle.com/datasets/daichiuchigashima/thelook-ecommerce)
 - **Transformation Tool:** [dbt Core Official Documentation](https://docs.getdbt.com/)
@@ -158,7 +140,7 @@ cd looker_ecommerce_dbt
 
 ---
 
-## 9. My Notes
+## My Notes
 
 *(You can use this section to write custom analysis notes, logistics study summaries, future pipeline upgrade drafts, cohort evaluations, or any other notes related to your data analysis journey!)*
 
