@@ -133,7 +133,7 @@ cd looker_ecommerce_dbt
 
 ## References / Useful Resources
 
-- **Data Source:** [Looker Synthetic E-Commerce Kaggle Dataset](https://www.kaggle.com/datasets/daichiuchigashima/thelook-ecommerce)
+- **Data Source:** [Looker Synthetic E-Commerce Kaggle Dataset]([https://www.kaggle.com/datasets/daichiuchigashima/thelook-ecommerce](https://www.kaggle.com/datasets/mustafakeser4/looker-ecommerce-bigquery-dataset))
 - **Transformation Tool:** [dbt Core Official Documentation](https://docs.getdbt.com/)
 - **Data Warehouse:** [Google BigQuery SQL Syntax Reference](https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax)
 - **Data Visualization:** [Looker Studio Quick-Start Guide](https://support.google.com/looker-studio/answer/6292570)
