@@ -3,6 +3,7 @@ import zipfile
 import glob
 from pathlib import Path
 from dotenv import load_dotenv
+from google.cloud import bigquery
 
 # 1. Load environment variables from .env file
 load_dotenv()
@@ -15,53 +16,39 @@ print("Checking environment variables...")
 print(f"GCP Project ID: {gcp_project_id}")
 print(f"BigQuery Dataset: {bq_dataset_id}")
 
-# 2. Setup Kaggle API credentials
-# The Kaggle API client reads credentials from environment variables: KAGGLE_USERNAME and KAGGLE_KEY
-if not os.getenv("KAGGLE_USERNAME") or not os.getenv("KAGGLE_KEY"):
-    raise ValueError(
-        "KAGGLE_USERNAME or KAGGLE_KEY is not set in environment variables. Please check your .env file."
-    )
-
-# Now import kaggle after setting up credentials in env
-import kaggle
-from google.cloud import bigquery
-
-# Initialize Google BigQuery Client
-# It will automatically pick up GOOGLE_APPLICATION_CREDENTIALS from .env via os.environ
-if not os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
-    raise ValueError(
-        "GOOGLE_APPLICATION_CREDENTIALS is not set in environment variables. Please check your .env file."
-    )
+# 2. Setup Kaggle API credentials & local dataset fallbacks
+dataset_slug = os.getenv("KAGGLE_DATASET", "mustafakeser4/looker-ecommerce-bigquery-dataset")
 
 # 3. Create folders for data storage
 data_dir = Path("data")
 data_dir.mkdir(exist_ok=True)
 
-# 4. Search and download the dataset from Kaggle
-# The dataset could be under different slugs. We will try 'thelook-ecommerce/thelook-ecommerce' or search dynamically.
-dataset_slug = "thelook-ecommerce/thelook-ecommerce"
+# 4. Search and download the dataset from Kaggle or extract existing local dataset zip
+print(f"\n--- Phase 1: Obtaining dataset '{dataset_slug}' ---")
 
-print(f"\n--- Phase 1: Downloading dataset '{dataset_slug}' from Kaggle ---")
-try:
-    # Download files to 'data/' folder
-    kaggle.api.dataset_download_files(dataset_slug, path=str(data_dir), unzip=False)
-    print("Download completed successfully!")
-except Exception as e:
-    print(f"Error downloading direct slug '{dataset_slug}': {e}")
-    print("Attempting to search for the dataset dynamically...")
-    try:
-        datasets = kaggle.api.dataset_list(search="thelook ecommerce")
-        if datasets:
-            # Pick the first matching dataset
-            dataset_slug = datasets[0].ref
-            print(f"Found matching dataset slug: '{dataset_slug}'")
+# Check if zip exists in parent directory or data directory
+parent_zip = Path("../looker-ecommerce-bigquery-dataset.zip")
+local_zip = data_dir / "looker-ecommerce-bigquery-dataset.zip"
+
+if parent_zip.exists() and not (list(data_dir.glob("*.csv")) or list(data_dir.glob("*.zip"))):
+    import shutil
+    print(f"Found local dataset ZIP at {parent_zip}. Copying to {data_dir}...")
+    shutil.copy(parent_zip, local_zip)
+
+if not list(data_dir.glob("*.csv")) and not list(data_dir.glob("*.zip")):
+    kaggle_user = os.getenv("KAGGLE_USERNAME")
+    kaggle_key = os.getenv("KAGGLE_KEY")
+    
+    if kaggle_user and kaggle_key:
+        import kaggle
+        print(f"Downloading dataset '{dataset_slug}' using Kaggle API...")
+        try:
             kaggle.api.dataset_download_files(dataset_slug, path=str(data_dir), unzip=False)
             print("Download completed successfully!")
-        else:
-            raise FileNotFoundError("Could not find any Looker eCommerce dataset on Kaggle.")
-    except Exception as search_err:
-        print(f"Failed to find or download dataset: {search_err}")
-        exit(1)
+        except Exception as e:
+            print(f"Error downloading dataset '{dataset_slug}': {e}")
+    else:
+        print("KAGGLE_USERNAME or KAGGLE_KEY not found in .env, checking for local data files...")
 
 # 5. Extract the ZIP file
 zip_files = list(data_dir.glob("*.zip"))
@@ -74,7 +61,7 @@ if zip_files:
     # Remove ZIP file to save space
     zip_path.unlink()
 else:
-    print("\nNo ZIP file found. Files might have been downloaded unzipped.")
+    print("\nNo ZIP file found. Proceeding with existing CSV files in data/ directory.")
 
 # 6. Load CSV files to BigQuery
 print(f"\n--- Phase 2: Uploading CSV files to Google BigQuery ({gcp_project_id}) ---")
@@ -106,6 +93,8 @@ if not csv_files:
     print("No CSV files found for ingestion.")
     exit(0)
 
+import pandas as pd
+
 # Ingest each CSV file
 for csv_file in csv_files:
     table_name = csv_file.stem
@@ -116,22 +105,21 @@ for csv_file in csv_files:
     
     table_ref = dataset_ref.table(table_name)
     
-    print(f"\nUploading '{csv_file.name}' to table '{bq_dataset_id}.{table_name}'...")
+    print(f"\nReading '{csv_file.name}' via pandas...")
+    df = pd.read_csv(csv_file)
+    
+    print(f"Uploading '{csv_file.name}' ({len(df)} rows) to table '{bq_dataset_id}.{table_name}'...")
     
     # Configure the load job
     job_config = bigquery.LoadJobConfig(
-        source_format=bigquery.SourceFormat.CSV,
-        skip_leading_rows=1,      # Skip header row
-        autodetect=True,          # Let BigQuery detect types (schema) automatically
         write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE # Overwrite existing table data
     )
     
-    with open(csv_file, "rb") as source_file:
-        load_job = bq_client.load_table_from_file(
-            source_file,
-            table_ref,
-            job_config=job_config
-        )
+    load_job = bq_client.load_table_from_dataframe(
+        df,
+        table_ref,
+        job_config=job_config
+    )
         
     # Wait for the job to complete
     try:
@@ -139,8 +127,7 @@ for csv_file in csv_files:
         print(f"Successfully uploaded {load_job.output_rows} rows into '{bq_dataset_id}.{table_name}'!")
     except Exception as e:
         print(f"Error uploading table '{table_name}': {e}")
-        # Print load errors if any
-        if load_job.errors:
+        if hasattr(load_job, 'errors') and load_job.errors:
             for error in load_job.errors:
                 print(f"  - {error}")
 

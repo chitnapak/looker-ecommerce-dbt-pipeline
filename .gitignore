@@ -31,3 +31,4 @@ dbt_packages/
 dbt_modules/
 logs/
 Profiles.yml
+profiles.yml
